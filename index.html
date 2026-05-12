@@ -704,48 +704,8 @@
         </div>
       </div>
 
-      <div class="location-grid">
-        <div class="location-card visited">
-          <div class="location-icon visited">✦</div>
-          <div class="location-name visited">泉州</div>
-          <div class="location-status visited">已打卡</div>
-        </div>
-        <div class="location-card visited">
-          <div class="location-icon visited">✦</div>
-          <div class="location-name visited">珠海</div>
-          <div class="location-status visited">已打卡</div>
-        </div>
-        <div class="location-card visited">
-          <div class="location-icon visited">✦</div>
-          <div class="location-name visited">琳达</div>
-          <div class="location-status visited">已打卡</div>
-        </div>
-        <div class="location-card visited">
-          <div class="location-icon visited">✦</div>
-          <div class="location-name visited">河北</div>
-          <div class="location-status visited">已打卡</div>
-        </div>
-        <div class="location-card visited">
-          <div class="location-icon visited">✦</div>
-          <div class="location-name visited">湖北</div>
-          <div class="location-status visited">已打卡</div>
-        </div>
-        <div class="location-card visited">
-          <div class="location-icon visited">✦</div>
-          <div class="location-name visited">plus</div>
-          <div class="location-status visited">已打卡</div>
-        </div>
-        <div class="location-card not-visited">
-          <div class="location-icon not-visited">✧</div>
-          <div class="location-name not-visited">帕梅</div>
-          <div class="location-status not-visited">待解锁</div>
-        </div>
-        <div class="location-card not-visited">
-          <div class="location-icon not-visited">✧</div>
-          <div class="location-name not-visited">白月光</div>
-          <div class="location-status not-visited">待解锁</div>
-        </div>
-      </div>
+      <div id="china-map" style="width: 100%; height: 500px; margin-top: 30px;"></div>
+      <p style="text-align: center; color: #666; font-size: 12px; margin-top: 10px;">绿色省份代表已打卡 灰色省份代表未完成</p>
     </section>
 
     <!-- Next Stop Section -->
@@ -950,6 +910,83 @@
     if (checkinSection) {
       progressObserver.observe(checkinSection);
     }
+  </script>
+
+  <!-- ECharts China Map -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@4.9.0/dist/echarts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/js/china.js"></script>
+  <script>
+    (function() {
+      const chartDom = document.getElementById('china-map');
+      if (!chartDom) return;
+
+      const myChart = echarts.init(chartDom, 'dark');
+
+      // Province check-in status: visited provinces in neon green, others in gray
+      // 省份打卡状态：已打卡省份用荧光绿，其他用灰色
+      const visitedProvinces = ['福建', '广东', '河北', '湖北'];
+
+      const option = {
+        backgroundColor: 'transparent',
+        tooltip: {
+          trigger: 'item',
+          formatter: function(params) {
+            const isVisited = visitedProvinces.includes(params.name);
+            const status = isVisited ? '✦ 已打卡' : '✧ 待解锁';
+            return '<div style="text-align:center;">' + params.name + '<br/>' + status + '</div>';
+          },
+          backgroundColor: 'rgba(10, 10, 10, 0.9)',
+          borderColor: '#ff00ff',
+          borderWidth: 1,
+          textStyle: { color: '#fff' }
+        },
+        visualMap: {
+          show: false,
+          min: 0,
+          max: 1,
+          inRange: {
+            color: ['#1a1a1a', '#00ff88']
+          }
+        },
+        series: [{
+          name: '打卡地图',
+          type: 'map',
+          map: 'china',
+          roam: true,
+          zoom: 1.2,
+          label: {
+            show: true,
+            color: '#888',
+            fontSize: 10
+          },
+          itemStyle: {
+            areaColor: '#1a1a1a',
+            borderColor: '#333',
+            borderWidth: 1
+          },
+          emphasis: {
+            label: { color: '#fff', fontSize: 12 },
+            itemStyle: {
+              areaColor: '#00ff88',
+              shadowBlur: 20,
+              shadowColor: 'rgba(0, 255, 136, 0.5)'
+            }
+          },
+          data: [
+            { name: '福建', value: 1 },
+            { name: '广东', value: 1 },
+            { name: '河北', value: 1 },
+            { name: '湖北', value: 1 }
+          ]
+        }]
+      };
+
+      myChart.setOption(option);
+
+      window.addEventListener('resize', function() {
+        myChart.resize();
+      });
+    })();
   </script>
 </body>
 </html>
