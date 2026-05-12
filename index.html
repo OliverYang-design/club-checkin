@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商K打卡地图 | Night Club Check-In</title>
+  <style>
+    /* Reset and Base */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #050505;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Canvas Background */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Main Container */
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* Scan Line Effect */
+    .scan-line {
+      position: fixed;
+      top: 0;
+      left: -100%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 0, 255, 0.15), transparent);
+      z-index: 2;
+      pointer-events: none;
+      animation: scanLine 4s linear infinite;
+    }
+
+    @keyframes scanLine {
+      0% { left: -50%; }
+      100% { left: 150%; }
+    }
+
+    /* Neon Flicker */
+    .neon-flicker {
+      animation: neonFlicker 1.5s infinite alternate;
+    }
+
+    @keyframes neonFlicker {
+      0%, 18%, 22%, 25%, 53%, 57%, 100% {
+        text-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 20px currentColor, 0 0 40px currentColor;
+      }
+      20%, 24%, 55% {
+        text-shadow: none;
+      }
+    }
+
+    /* Gradient Shift */
+    .gradient-shift {
+      background: linear-gradient(90deg, #ff00ff, #00ff88, #ff00ff);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradientShift 3s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Strong Pulse */
+    .strong-pulse {
+      animation: strongPulse 1.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes strongPulse {
+      0% {
+        box-shadow: 0 0 5px rgba(255, 0, 255, 0.3), inset 0 0 5px rgba(255, 0, 255, 0.1);
+        border-color: rgba(255, 0, 255, 0.4);
+      }
+      100% {
+        box-shadow: 0 0 20px rgba(255, 0, 255, 0.6), 0 0 40px rgba(255, 0, 255, 0.3), inset 0 0 10px rgba(255, 0, 255, 0.2);
+        border-color: rgba(255, 0, 255, 0.8);
+      }
+    }
+
+    .strong-pulse-green {
+      animation: strongPulseGreen 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes strongPulseGreen {
+      0% {
+        box-shadow: 0 0 5px rgba(0, 255, 136, 0.3), inset 0 0 5px rgba(0, 255, 136, 0.1);
+        border-color: rgba(0, 255, 136, 0.4);
+      }
+      100% {
+        box-shadow: 0 0 20px rgba(0, 255, 136, 0.6), 0 0 40px rgba(0, 255, 136, 0.3), inset 0 0 10px rgba(0, 255, 136, 0.2);
+        border-color: rgba(0, 255, 136, 0.8);
+      }
+    }
+
+    .strong-pulse-blue {
+      animation: strongPulseBlue 2.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes strongPulseBlue {
+      0% {
+        box-shadow: 0 0 5px rgba(0, 204, 255, 0.3), inset 0 0 5px rgba(0, 204, 255, 0.1);
+        border-color: rgba(0, 204, 255, 0.4);
+      }
+      100% {
+        box-shadow: 0 0 20px rgba(0, 204, 255, 0.6), 0 0 40px rgba(0, 204, 255, 0.3), inset 0 0 10px rgba(0, 204, 255, 0.2);
+        border-color: rgba(0, 204, 255, 0.8);
+      }
+    }
+
+    .strong-pulse-gold {
+      animation: strongPulseGold 1.8s ease-in-out infinite alternate;
+    }
+
+    @keyframes strongPulseGold {
+      0% {
+        box-shadow: 0 0 5px rgba(255, 204, 0, 0.3), inset 0 0 5px rgba(255, 204, 0, 0.1);
+        border-color: rgba(255, 204, 0, 0.4);
+      }
+      100% {
+        box-shadow: 0 0 20px rgba(255, 204, 0, 0.6), 0 0 40px rgba(255, 204, 0, 0.3), inset 0 0 10px rgba(255, 204, 0, 0.2);
+        border-color: rgba(255, 204, 0, 0.8);
+      }
+    }
+
+    /* Crown Glow */
+    .crown-glow {
+      animation: crownGlow 1.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes crownGlow {
+      0% {
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.4), 0 0 30px rgba(255, 215, 0, 0.2);
+      }
+      100% {
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.6), 0 0 60px rgba(255, 215, 0, 0.4), 0 0 90px rgba(255, 215, 0, 0.2);
+      }
+    }
+
+    /* Soft Glow */
+    .soft-glow {
+      animation: softGlow 2s infinite alternate;
+    }
+
+    @keyframes softGlow {
+      0% { text-shadow: 0 0 5px currentColor; }
+      100% { text-shadow: 0 0 15px currentColor, 0 0 30px currentColor; }
+    }
+
+    /* Section Styles */
+    section {
+      padding: 60px 0;
+      position: relative;
+    }
+
+    .section-title {
+      font-size: 14px;
+      color: #ff00ff;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .section-heading {
+      font-size: 28px;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background:
+        radial-gradient(circle at 30% 50%, rgba(255, 0, 255, 0.12), transparent 50%),
+        radial-gradient(circle at 70% 50%, rgba(0, 255, 136, 0.12), transparent 50%);
+      animation: breathe 4s ease-in-out infinite alternate;
+    }
+
+    @keyframes breathe {
+      0% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-badge {
+      font-size: 14px;
+      color: #ff00ff;
+      letter-spacing: 10px;
+      margin-bottom: 20px;
+      text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff, 0 0 20px #ff00ff;
+    }
+
+    .hero-title {
+      font-size: 48px;
+      font-weight: bold;
+      margin: 0;
+      letter-spacing: 2px;
+    }
+
+    .hero-subtitle {
+      color: #666;
+      font-size: 16px;
+      margin-top: 15px;
+    }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #666;
+      font-size: 12px;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+      40% { transform: translateX(-50%) translateY(-10px); }
+      60% { transform: translateX(-50%) translateY(-5px); }
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+
+    .stat-card {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 25px 15px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.02);
+      transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: scale(1.05);
+    }
+
+    .stat-value {
+      font-size: 36px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .stat-value.pink {
+      color: #ff00ff;
+      text-shadow: 0 0 5px #ff00ff, 0 0 15px #ff00ff, 0 0 30px rgba(255, 0, 255, 0.6);
+    }
+
+    .stat-value.green {
+      color: #00ff88;
+      text-shadow: 0 0 5px #00ff88, 0 0 15px #00ff88, 0 0 30px rgba(0, 255, 136, 0.6);
+    }
+
+    .stat-value.blue {
+      color: #00ccff;
+      text-shadow: 0 0 5px #00ccff, 0 0 15px #00ccff, 0 0 30px rgba(0, 204, 255, 0.6);
+    }
+
+    .stat-value.gold {
+      color: #ffcc00;
+      text-shadow: 0 0 5px #ffcc00, 0 0 15px #ffcc00, 0 0 30px rgba(255, 204, 0, 0.6);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #888;
+    }
+
+    /* Ranking Section */
+    .podium {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      align-items: flex-end;
+      margin-bottom: 40px;
+    }
+
+    .podium-item {
+      text-align: center;
+      padding: 20px;
+      border-radius: 12px;
+      transition: transform 0.3s ease;
+    }
+
+    .podium-item:hover {
+      transform: translateY(-5px);
+    }
+
+    .podium-item.second {
+      width: 130px;
+      border: 1px solid rgba(192, 192, 192, 0.4);
+      background: rgba(192, 192, 192, 0.08);
+    }
+
+    .podium-item.first {
+      width: 160px;
+      border: 2px solid rgba(255, 215, 0, 0.6);
+      background: rgba(255, 215, 0, 0.1);
+      padding: 30px 20px;
+      transform: translateY(-15px);
+    }
+
+    .podium-item.first:hover {
+      transform: translateY(-20px);
+    }
+
+    .podium-item.third {
+      width: 130px;
+      border: 1px solid rgba(205, 127, 50, 0.4);
+      background: rgba(205, 127, 50, 0.08);
+    }
+
+    .podium-rank {
+      font-size: 42px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .podium-rank.first { color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.8), 0 0 30px rgba(255, 215, 0, 0.5); }
+    .podium-rank.second { color: #c0c0c0; }
+    .podium-rank.third { color: #cd7f32; }
+
+    .podium-name {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .podium-info {
+      font-size: 12px;
+      color: #888;
+    }
+
+    .ranking-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .ranking-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 15px 20px;
+      background: rgba(255, 255, 255, 0.02);
+      transition: all 0.3s ease;
+    }
+
+    .ranking-item:hover {
+      border-color: rgba(255, 0, 255, 0.3);
+      background: rgba(255, 0, 255, 0.05);
+      box-shadow: 0 0 20px rgba(255, 0, 255, 0.2);
+    }
+
+    .ranking-number {
+      font-size: 24px;
+      font-weight: bold;
+      width: 35px;
+      text-align: center;
+    }
+
+    .ranking-number.pink { color: #ff00ff; text-shadow: 0 0 10px rgba(255, 0, 255, 0.6); }
+    .ranking-number.green { color: #00ff88; text-shadow: 0 0 10px rgba(0, 255, 136, 0.6); }
+    .ranking-number.blue { color: #00ccff; text-shadow: 0 0 10px rgba(0, 204, 255, 0.6); }
+
+    .ranking-info {
+      flex: 1;
+    }
+
+    .ranking-name {
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .ranking-meta {
+      font-size: 12px;
+      color: #888;
+      margin-top: 3px;
+    }
+
+    .ranking-score {
+      font-size: 14px;
+      color: #ffcc00;
+    }
+
+    /* Check-in Map */
+    .progress-section {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .progress-count {
+      font-size: 56px;
+      font-weight: bold;
+      color: #00ff88;
+      text-shadow: 0 0 10px rgba(0, 255, 136, 0.6), 0 0 30px rgba(0, 255, 136, 0.4);
+    }
+
+    .progress-label {
+      font-size: 14px;
+      color: #888;
+      margin-top: 5px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      background: #1a1a1a;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 20px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00ff88, #00ccff);
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+      transition: width 1.5s ease;
+    }
+
+    .location-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .location-card {
+      border-radius: 12px;
+      padding: 25px 10px;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .location-card.visited {
+      border: 1px solid rgba(0, 255, 136, 0.5);
+      background: rgba(0, 255, 136, 0.08);
+    }
+
+    .location-card.visited:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 25px rgba(0, 255, 136, 0.5);
+    }
+
+    .location-card.not-visited {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.02);
+      opacity: 0.5;
+    }
+
+    .location-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .location-icon.visited { color: #00ff88; text-shadow: 0 0 10px rgba(0, 255, 136, 0.6); }
+    .location-icon.not-visited { color: #444; }
+
+    .location-name {
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .location-name.visited { color: #fff; }
+    .location-name.not-visited { color: #555; }
+
+    .location-status {
+      font-size: 11px;
+      margin-top: 5px;
+    }
+
+    .location-status.visited { color: #00ff88; }
+    .location-status.not-visited { color: #444; }
+
+    /* Next Stop */
+    .next-stop {
+      text-align: center;
+      padding: 60px 0;
+    }
+
+    .next-stop-label {
+      font-size: 12px;
+      color: #ff00ff;
+      letter-spacing: 8px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      text-shadow: 0 0 5px rgba(255, 0, 255, 0.6);
+    }
+
+    .next-stop-name {
+      font-size: 56px;
+      font-weight: bold;
+      background: linear-gradient(90deg, #ff00ff, #00ff88);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 15px;
+    }
+
+    .next-stop-date {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 20px;
+    }
+
+    .next-stop-badge {
+      display: inline-block;
+      border: 1px solid #ff00ff;
+      border-radius: 20px;
+      padding: 10px 25px;
+      color: #ff00ff;
+      font-size: 12px;
+      letter-spacing: 2px;
+      animation: strongPulse 2s ease-in-out infinite alternate;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 40px 0;
+      color: #444;
+      font-size: 12px;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .hero-title { font-size: 32px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .location-grid { grid-template-columns: repeat(2, 1fr); }
+      .podium { flex-direction: column; align-items: center; }
+      .podium-item.first { transform: none; order: -1; }
+      .podium-item.first:hover { transform: scale(1.05); }
+      .progress-count { font-size: 42px; }
+      .next-stop-name { font-size: 42px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Particle Background Canvas -->
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- Scan Line Effect -->
+  <div class="scan-line"></div>
+
+  <div class="container">
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-content">
+        <div class="hero-badge neon-flicker">✦ 商K打卡地图 ✦</div>
+        <h1 class="hero-title gradient-shift">NIGHT CLUB CHECK-IN</h1>
+        <p class="hero-subtitle">刘公子的商K探索足迹</p>
+      </div>
+      <div class="scroll-hint">▼ 向下滚动探索 ▼</div>
+    </section>
+
+    <!-- Stats Section -->
+    <section id="stats">
+      <div class="section-title">PERSONAL RECORDS</div>
+      <h2 class="section-heading gradient-shift">个人战绩墙</h2>
+      <div class="stats-grid">
+        <div class="stat-card strong-pulse">
+          <div class="stat-value pink" data-target="8800" data-prefix="¥">0</div>
+          <div class="stat-label">最高单次消费</div>
+        </div>
+        <div class="stat-card strong-pulse-green">
+          <div class="stat-value green" data-target="47" data-suffix="次">0</div>
+          <div class="stat-label">累计打卡次数</div>
+        </div>
+        <div class="stat-card strong-pulse-blue">
+          <div class="stat-value blue" data-target="5" data-suffix="天">0</div>
+          <div class="stat-label">最长连去记录</div>
+        </div>
+        <div class="stat-card strong-pulse-gold">
+          <div class="stat-value gold" data-target="4.5">0</div>
+          <div class="stat-label">平均满意度</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ranking Section -->
+    <section id="ranking">
+      <div class="section-title">TOP RANKING</div>
+      <h2 class="section-heading gradient-shift">我的喜好排行榜</h2>
+
+      <!-- Top 3 Podium -->
+      <div class="podium">
+        <div class="podium-item second">
+          <div class="podium-rank second soft-glow">2</div>
+          <div class="podium-name">珠海</div>
+          <div class="podium-info">4.8★ · 8次</div>
+        </div>
+        <div class="podium-item first crown-glow">
+          <div class="podium-rank first">1</div>
+          <div class="podium-name">厦门</div>
+          <div class="podium-info">5.0★ · 12次</div>
+        </div>
+        <div class="podium-item third">
+          <div class="podium-rank third soft-glow">3</div>
+          <div class="podium-name">琳达</div>
+          <div class="podium-info">4.7★ · 6次</div>
+        </div>
+      </div>
+
+      <!-- 4-8 List -->
+      <div class="ranking-list">
+        <div class="ranking-item">
+          <div class="ranking-number pink">4</div>
+          <div class="ranking-info">
+            <div class="ranking-name">河北</div>
+            <div class="ranking-meta">最近打卡 2025.02.01 · 累计 5次</div>
+          </div>
+          <div class="ranking-score">4.5★</div>
+        </div>
+        <div class="ranking-item">
+          <div class="ranking-number green">5</div>
+          <div class="ranking-info">
+            <div class="ranking-name">湖北</div>
+            <div class="ranking-meta">最近打卡 2025.01.15 · 累计 4次</div>
+          </div>
+          <div class="ranking-score">4.3★</div>
+        </div>
+        <div class="ranking-item">
+          <div class="ranking-number blue">6</div>
+          <div class="ranking-info">
+            <div class="ranking-name">plus</div>
+            <div class="ranking-meta">最近打卡 2024.12.20 · 累计 3次</div>
+          </div>
+          <div class="ranking-score">4.2★</div>
+        </div>
+        <div class="ranking-item" style="opacity: 0.5;">
+          <div class="ranking-number" style="color: #444;">7</div>
+          <div class="ranking-info">
+            <div class="ranking-name" style="color: #555;">帕梅</div>
+            <div class="ranking-meta">待打卡</div>
+          </div>
+          <div class="ranking-score" style="color: #444;">--</div>
+        </div>
+        <div class="ranking-item" style="opacity: 0.5;">
+          <div class="ranking-number" style="color: #444;">8</div>
+          <div class="ranking-info">
+            <div class="ranking-name" style="color: #555;">白月光</div>
+            <div class="ranking-meta">待打卡</div>
+          </div>
+          <div class="ranking-score" style="color: #444;">--</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Check-in Map Section -->
+    <section id="checkin">
+      <div class="section-title">CHECK-IN MAP</div>
+      <h2 class="section-heading gradient-shift">打卡集邮册</h2>
+
+      <div class="progress-section">
+        <div class="progress-count">6 / 8</div>
+        <div class="progress-label">已点亮</div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 75%;"></div>
+        </div>
+      </div>
+
+      <div class="location-grid">
+        <div class="location-card visited">
+          <div class="location-icon visited">✦</div>
+          <div class="location-name visited">厦门</div>
+          <div class="location-status visited">已打卡</div>
+        </div>
+        <div class="location-card visited">
+          <div class="location-icon visited">✦</div>
+          <div class="location-name visited">珠海</div>
+          <div class="location-status visited">已打卡</div>
+        </div>
+        <div class="location-card visited">
+          <div class="location-icon visited">✦</div>
+          <div class="location-name visited">琳达</div>
+          <div class="location-status visited">已打卡</div>
+        </div>
+        <div class="location-card visited">
+          <div class="location-icon visited">✦</div>
+          <div class="location-name visited">河北</div>
+          <div class="location-status visited">已打卡</div>
+        </div>
+        <div class="location-card visited">
+          <div class="location-icon visited">✦</div>
+          <div class="location-name visited">湖北</div>
+          <div class="location-status visited">已打卡</div>
+        </div>
+        <div class="location-card visited">
+          <div class="location-icon visited">✦</div>
+          <div class="location-name visited">plus</div>
+          <div class="location-status visited">已打卡</div>
+        </div>
+        <div class="location-card not-visited">
+          <div class="location-icon not-visited">✧</div>
+          <div class="location-name not-visited">帕梅</div>
+          <div class="location-status not-visited">待解锁</div>
+        </div>
+        <div class="location-card not-visited">
+          <div class="location-icon not-visited">✧</div>
+          <div class="location-name not-visited">白月光</div>
+          <div class="location-status not-visited">待解锁</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Next Stop Section -->
+    <section id="next">
+      <div class="next-stop">
+        <div class="next-stop-label neon-flicker">NEXT DESTINATION</div>
+        <div class="next-stop-name gradient-shift">帕梅</div>
+        <div class="next-stop-date">预计打卡 · 2025.06</div>
+        <div class="next-stop-badge">即将解锁</div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <p>商K打卡地图 · 持续更新中</p>
+      <p style="margin-top: 5px;">最后更新：2025.05.12</p>
+    </footer>
+  </div>
+
+  <script>
+    /**
+     * Data structure - replace with your real data
+     * 数据结构 - 替换为你的真实数据
+     */
+    const siteData = {
+      userStats: {
+        highestSpend: 8800,
+        totalVisits: 47,
+        longestStreak: 5,
+        averageRating: 4.5
+      },
+      ranking: [
+        { rank: 1, name: "厦门", rating: 5.0, lastVisit: "2025.04.15", visits: 12, visited: true },
+        { rank: 2, name: "珠海", rating: 4.8, lastVisit: "2025.03.20", visits: 8, visited: true },
+        { rank: 3, name: "琳达", rating: 4.7, lastVisit: "2025.02.28", visits: 6, visited: true },
+        { rank: 4, name: "河北", rating: 4.5, lastVisit: "2025.02.01", visits: 5, visited: true },
+        { rank: 5, name: "湖北", rating: 4.3, lastVisit: "2025.01.15", visits: 4, visited: true },
+        { rank: 6, name: "plus", rating: 4.2, lastVisit: "2024.12.20", visits: 3, visited: true },
+        { rank: 7, name: "帕梅", rating: 0, lastVisit: null, visits: 0, visited: false },
+        { rank: 8, name: "白月光", rating: 0, lastVisit: null, visits: 0, visited: false }
+      ],
+      nextDestination: "帕梅",
+      nextDate: "2025.06",
+      lastUpdated: "2025.05.12"
+    };
+
+    /**
+     * Particle Background System
+     * 粒子背景系统
+     */
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 2 + 0.5;
+        this.speedX = (Math.random() - 0.5) * 0.5;
+        this.speedY = (Math.random() - 0.5) * 0.5;
+        this.color = Math.random() > 0.5 ? '#ff00ff' : '#00ff88';
+        this.alpha = Math.random() * 0.5 + 0.2;
+        this.pulseSpeed = Math.random() * 0.02 + 0.01;
+        this.pulsePhase = Math.random() * Math.PI * 2;
+      }
+
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.pulsePhase += this.pulseSpeed;
+
+        if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+          this.reset();
+        }
+      }
+
+      draw() {
+        const alpha = this.alpha * (0.5 + 0.5 * Math.sin(this.pulsePhase));
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = alpha;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function initParticles() {
+      particles = [];
+      const count = Math.min(80, Math.floor((canvas.width * canvas.height) / 10000));
+      for (let i = 0; i < count; i++) {
+        particles.push(new Particle());
+      }
+    }
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      requestAnimationFrame(animateParticles);
+    }
+
+    resizeCanvas();
+    initParticles();
+    animateParticles();
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      initParticles();
+    });
+
+    /**
+     * Number Roll Animation
+     * 数字滚动动画
+     */
+    function animateNumbers() {
+      const statValues = document.querySelectorAll('.stat-value[data-target]');
+      const duration = 2000;
+
+      statValues.forEach(el => {
+        const target = parseFloat(el.dataset.target);
+        const prefix = el.dataset.prefix || '';
+        const suffix = el.dataset.suffix || '';
+        const isFloat = target % 1 !== 0;
+        const startTime = performance.now();
+
+        function update(currentTime) {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const easeProgress = 1 - Math.pow(1 - progress, 3);
+          const current = target * easeProgress;
+
+          if (isFloat) {
+            el.textContent = prefix + current.toFixed(1) + suffix;
+          } else {
+            el.textContent = prefix + Math.floor(current) + suffix;
+          }
+
+          if (progress < 1) {
+            requestAnimationFrame(update);
+          }
+        }
+
+        requestAnimationFrame(update);
+      });
+    }
+
+    /**
+     * Intersection Observer for scroll animations
+     * 滚动触发动画
+     */
+    const observerOptions = {
+      threshold: 0.3
+    };
+
+    const statsObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          animateNumbers();
+          statsObserver.disconnect();
+        }
+      });
+    }, observerOptions);
+
+    const statsSection = document.getElementById('stats');
+    if (statsSection) {
+      statsObserver.observe(statsSection);
+    }
+
+    /**
+     * Progress bar animation
+     * 进度条动画
+     */
+    const progressObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const fill = entry.target.querySelector('.progress-fill');
+          if (fill) {
+            const targetWidth = fill.style.width;
+            fill.style.width = '0%';
+            setTimeout(() => {
+              fill.style.width = targetWidth;
+            }, 300);
+          }
+          progressObserver.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    const checkinSection = document.getElementById('checkin');
+    if (checkinSection) {
+      progressObserver.observe(checkinSection);
+    }
+  </script>
+</body>
+</html>
